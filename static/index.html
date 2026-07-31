@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TTAL Video Transcriber & Dubbing Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="logo-icon">
+          <i class="ri-video-chat-line"></i>
+        </div>
+        <div>
+          <h1>TTAL Studio</h1>
+          <p class="subtitle">English Video Transcriber & Vietnamese Dubbing Studio</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="hardware-badge" title="NVIDIA GeForce GTX 1060 6GB VRAM Detected">
+          <i class="ri-cpu-line"></i>
+          <span>GTX 1060 6GB (CUDA FP32)</span>
+        </div>
+        <button id="settingsBtn" class="btn btn-secondary">
+          <i class="ri-settings-4-line"></i> Settings
+        </button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <section class="left-panel">
+        <div class="card upload-card">
+          <div class="card-header">
+            <h3><i class="ri-upload-cloud-2-line"></i> Video / Audio Source</h3>
+          </div>
+          <div id="dropZone" class="drop-zone">
+            <input type="file" id="fileInput" accept="video/*,audio/*" class="file-input" />
+            <div class="drop-zone-content">
+              <i class="ri-film-line drop-icon"></i>
+              <h4>Drag & Drop Video Here</h4>
+              <p>Supports MP4, MKV, MOV, AVI, MP3, WAV</p>
+              <button class="btn btn-primary btn-sm mt-2">Browse Files</button>
+            </div>
+          </div>
+          <div id="fileMeta" class="file-meta hidden">
+            <i class="ri-file-video-line"></i>
+            <div class="meta-info">
+              <span id="fileName" class="file-name">filename.mp4</span>
+              <span id="fileSize" class="file-size">0 MB</span>
+            </div>
+            <button id="removeFileBtn" class="btn-icon" title="Remove File"><i class="ri-close-line"></i></button>
+          </div>
+        </div>
+
+        <div class="card context-card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3><i class="ri-movie-2-line"></i> Scene Context & Character Guidance</h3>
+            <button id="autoAnalyzeBtn" class="btn btn-secondary btn-sm" title="Auto-analyze transcript with AI">
+              <i class="ri-magic-line"></i> Auto-Analyze
+            </button>
+          </div>
+          <div class="context-body">
+            <textarea id="sceneContextInput" class="form-control context-textarea" placeholder="Optional context to guide Vietnamese pronouns & spoken dubbing register (e.g. 'Speaker 1 is a female doctor speaking to a male patient', 'Romantic comedy scene in a restaurant')..."></textarea>
+            <small class="help-text">Guides Ollama to generate exact interpersonal pronouns (tôi-anh, tôi-cô, anh-em, v.v.)</small>
+          </div>
+        </div>
+
+        <div class="card video-card">
+          <div class="card-header">
+            <h3><i class="ri-play-circle-line"></i> Synchronized Preview</h3>
+          </div>
+          <div class="video-container">
+            <video id="mediaPlayer" controls></video>
+            <div id="mediaPlaceholder" class="video-placeholder">
+              <i class="ri-clapperboard-line"></i>
+              <p>Upload a video to preview</p>
+            </div>
+          </div>
+          <div class="current-segment-bar">
+            <span class="label">ACTIVE LINE:</span>
+            <span id="activeScriptText" class="active-text">Select a segment or start transcription</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="right-panel">
+        <div class="card controls-card">
+          <div class="action-buttons">
+            <button id="transcribeBtn" class="btn btn-primary btn-glow" disabled>
+              <i class="ri-mic-line"></i> 1. Transcribe (English TTAL)
+            </button>
+            <button id="translateBtn" class="btn btn-accent btn-glow" disabled>
+              <i class="ri-translate-2"></i> 2. Translate to Dub Script (Vietnamese)
+            </button>
+          </div>
+
+          <div class="export-dropdown-group">
+            <button id="exportMainBtn" class="btn btn-secondary" disabled>
+              <i class="ri-download-2-line"></i> Export Transcript <i class="ri-arrow-down-s-line"></i>
+            </button>
+            <div id="exportMenu" class="export-menu hidden">
+              <button data-fmt="csv"><i class="ri-file-text-line"></i> CSV Format (.csv)</button>
+              <button data-fmt="xlsx"><i class="ri-file-excel-line"></i> Excel Format (.xlsx)</button>
+              <button data-fmt="srt"><i class="ri-subtitles-line"></i> SRT Subtitle (.srt)</button>
+              <button data-fmt="vtt"><i class="ri-subtitles-line"></i> WebVTT Subtitle (.vtt)</button>
+              <button data-fmt="json"><i class="ri-code-s-slash-line"></i> JSON Data (.json)</button>
+              <button data-fmt="txt"><i class="ri-file-list-line"></i> Plain Script (.txt)</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="progressCard" class="card progress-card hidden">
+          <div class="progress-header">
+            <span id="progressStepLabel">Extracting Audio...</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="progressBarFill" class="progress-bar-fill"></div>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-header-toolbar">
+            <div class="table-title">
+              <h3><i class="ri-table-line"></i> TTAL Transcript Editor</h3>
+              <span id="rowCountBadge" class="badge badge-info">0 Segments</span>
+            </div>
+
+            <div class="table-search">
+              <i class="ri-search-line"></i>
+              <input type="text" id="searchInput" placeholder="Search transcript text or speaker..." />
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="ttal-table">
+              <thead>
+                <tr>
+                  <th width="35">#</th>
+                  <th width="45">Play</th>
+                  <th width="90">Start Time</th>
+                  <th width="90">End Time</th>
+                  <th width="65">Dur (s)</th>
+                  <th width="125">Speaker</th>
+                  <th>English Script (eng_script)</th>
+                  <th width="55">Words</th>
+                  <th width="55">Eng Syl</th>
+                  <th id="vieColHeader" class="vie-col hidden">Vietnamese Dub Script (vie_script)</th>
+                  <th id="vieSylColHeader" class="vie-col hidden" width="55">Vie Syl</th>
+                  <th width="115">Dub Timing Fit</th>
+                  <th width="75">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="transcriptBody">
+                <tr class="empty-row">
+                  <td colspan="13">
+                    <div class="empty-state">
+                      <i class="ri-draft-line"></i>
+                      <p>No transcript generated yet. Upload a video and click <strong>1. Transcribe</strong> to begin.</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="settingsModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="ri-settings-3-line"></i> Application Settings</h3>
+        <button id="closeSettingsBtn" class="btn-icon"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Faster-Whisper Model Size</label>
+          <select id="modelSizeSelect" class="form-control">
+            <option value="small.en" selected>small.en (Fast & Fits 6GB VRAM)</option>
+            <option value="medium.en">medium.en (Higher Accuracy, ~2.5GB VRAM)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Speaker Diarization Mode</label>
+          <select id="speakerModeSelect" class="form-control">
+            <option value="auto" selected>Local Feature Acoustic Clustering (No Token Needed)</option>
+            <option value="2">Force 2 Speakers (Local Feature Clustering)</option>
+            <option value="3">Force 3 Speakers (Local Feature Clustering)</option>
+            <option value="4">Force 4 Speakers (Local Feature Clustering)</option>
+            <option value="pyannote">Official Pyannote 3.1 (Requires HuggingFace Token)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Pyannote HuggingFace Token (Optional)</label>
+          <input type="password" id="hfTokenInput" class="form-control" placeholder="hf_..." />
+          <small class="help-text">Leave blank to use automatic local acoustic voice feature clustering.</small>
+        </div>
+
+        <div class="form-group">
+          <label>Ollama Model Name</label>
+          <input type="text" id="ollamaModelInput" class="form-control" value="qwen2.5:3b" placeholder="qwen2.5:3b" />
+          <small class="help-text">Default local LLM model for Vietnamese dub translation.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveSettingsBtn" class="btn btn-primary">Save & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

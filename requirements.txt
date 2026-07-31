@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-multipart
+faster-whisper
+torch
+torchaudio
+pandas
+openpyxl
+imageio-ffmpeg
+pyphen
+transformers
+sentencepiece
+requests
