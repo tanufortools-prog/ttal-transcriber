@@ -11,3 +11,8 @@ pyphen
 transformers
 sentencepiece
 requests
+numpy<2
+scipy<1.15
+scikit-learn
+soundfile
+deep-translator
